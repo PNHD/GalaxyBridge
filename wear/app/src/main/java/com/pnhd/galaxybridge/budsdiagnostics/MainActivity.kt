@@ -1,0 +1,243 @@
+package com.pnhd.galaxybridge.budsdiagnostics
+
+import android.Manifest
+import android.annotation.SuppressLint
+import android.app.Activity
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Bundle
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.RadioButton
+import android.widget.RadioGroup
+import android.widget.ScrollView
+import android.widget.TextView
+
+class MainActivity : Activity() {
+    companion object {
+        private const val BLUETOOTH_PERMISSION_REQUEST = 510
+    }
+
+    private val bluetoothAdapter by lazy {
+        (getSystemService(BLUETOOTH_SERVICE) as BluetoothManager).adapter
+    }
+    private val probe by lazy { ReadOnlyRfcommProbe(bluetoothAdapter, ::onProbeSnapshot) }
+
+    private lateinit var statusView: TextView
+    private lateinit var deviceGroup: RadioGroup
+    private lateinit var connectButton: Button
+    private lateinit var disconnectButton: Button
+    private lateinit var reportView: TextView
+    private var selectedDevice: BluetoothDevice? = null
+    private var latestReport = DiagnosticReport.render(
+        RfcommProbeSnapshot(null, false, null, "idle", null, null, 0, "", null),
+        ReadOnlyRfcommProbe.SERVICE_UUID
+    )
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(createContentView())
+        ensureBluetoothPermissionAndLoad()
+    }
+
+    override fun onDestroy() {
+        probe.disconnect()
+        super.onDestroy()
+    }
+
+    private fun createContentView(): ScrollView {
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16, 16, 16, 16)
+        }
+
+        content.addView(text("GB-M0-R4 Buds RFCOMM Probe", 18f))
+        content.addView(text("READ-ONLY: sends zero bytes, has no reconnect loop, and uses SDP service resolution."))
+
+        statusView = text("Checking Bluetooth permission")
+        content.addView(statusView)
+
+        content.addView(button("Refresh bonded devices") { ensureBluetoothPermissionAndLoad() })
+
+        deviceGroup = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
+        content.addView(deviceGroup)
+
+        val connectionButtons = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            connectButton = button("Connect") { connectSelectedDevice() }.also {
+                it.isEnabled = false
+                addView(it)
+            }
+            disconnectButton = button("Disconnect") { probe.disconnect() }.also {
+                it.isEnabled = false
+                addView(it)
+            }
+        }
+        content.addView(connectionButtons)
+
+        val exportButtons = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(button("Copy report") { copyReport() })
+            addView(button("Share report") { shareReport() })
+        }
+        content.addView(exportButtons)
+
+        reportView = text(latestReport, 10f).apply { setTextIsSelectable(true) }
+        content.addView(reportView)
+
+        return ScrollView(this).apply { addView(content) }
+    }
+
+    private fun text(value: String, sizeSp: Float = 12f) = TextView(this).apply {
+        text = value
+        textSize = sizeSp
+        setPadding(4, 6, 4, 6)
+    }
+
+    private fun button(label: String, action: () -> Unit) = Button(this).apply {
+        text = label
+        setOnClickListener { action() }
+        layoutParams = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+    }
+
+    private fun ensureBluetoothPermissionAndLoad() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+            && checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(
+                arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
+                BLUETOOTH_PERMISSION_REQUEST
+            )
+            return
+        }
+        loadBondedDevices()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == BLUETOOTH_PERMISSION_REQUEST
+            && grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
+        ) {
+            loadBondedDevices()
+        } else if (requestCode == BLUETOOTH_PERMISSION_REQUEST) {
+            statusView.text = "Bluetooth connection permission denied"
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun loadBondedDevices() {
+        selectedDevice = null
+        connectButton.isEnabled = false
+        deviceGroup.removeAllViews()
+
+        if (!bluetoothAdapter.isEnabled) {
+            statusView.text = "Bluetooth is disabled"
+            return
+        }
+
+        val devices = bluetoothAdapter.bondedDevices.sortedWith(
+            compareByDescending<BluetoothDevice> { isLikelyTarget(it.name) }
+                .thenBy { it.name ?: "" }
+        )
+        statusView.text = "${devices.size} bonded device(s). Explicitly select SM-R510."
+
+        devices.forEach { device ->
+            val radio = RadioButton(this).apply {
+                text = deviceLabel(device)
+                setOnCheckedChangeListener { _, checked ->
+                    if (checked) {
+                        selectedDevice = device
+                        connectButton.isEnabled = true
+                        statusView.text = "Selected ${device.name ?: "unnamed device"}; verify metadata before connecting"
+                    }
+                }
+            }
+            deviceGroup.addView(radio)
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun deviceLabel(device: BluetoothDevice): String {
+        val name = device.name ?: "Unnamed bonded device"
+        val modelHint = if (isLikelyTarget(name)) "LIKELY SM-R510" else "UNVERIFIED"
+        val type = when (device.type) {
+            BluetoothDevice.DEVICE_TYPE_CLASSIC -> "Classic"
+            BluetoothDevice.DEVICE_TYPE_DUAL -> "Dual"
+            BluetoothDevice.DEVICE_TYPE_LE -> "LE"
+            else -> "Unknown type"
+        }
+        val cachedUuids = device.uuids?.joinToString { it.uuid.toString() } ?: "none cached"
+        return "$modelHint\n$name\n$type; bond=${device.bondState}; address=${maskedAddress(device.address)}\nUUIDs: $cachedUuids"
+    }
+
+    private fun isLikelyTarget(name: String?): Boolean {
+        val normalized = name?.lowercase() ?: return false
+        return normalized.contains("buds2 pro")
+            || normalized.contains("buds2pro")
+            || normalized.contains("sm-r510")
+    }
+
+    private fun maskedAddress(address: String): String {
+        val suffix = address.split(":").takeLast(2).joinToString(":")
+        return "**:**:**:**:$suffix"
+    }
+
+    private fun connectSelectedDevice() {
+        val device = selectedDevice ?: return
+        if (probe.connect(device)) {
+            statusView.text = "RFCOMM connection started; no command bytes will be sent"
+            connectButton.isEnabled = false
+            disconnectButton.isEnabled = true
+        } else {
+            statusView.text = "A probe is already active"
+        }
+    }
+
+    private fun onProbeSnapshot(snapshot: RfcommProbeSnapshot) {
+        runOnUiThread {
+            latestReport = DiagnosticReport.render(snapshot, ReadOnlyRfcommProbe.SERVICE_UUID)
+            reportView.text = latestReport
+            val active = snapshot.socketState == "connecting" || snapshot.socketState == "connected_read_only"
+            connectButton.isEnabled = !active && selectedDevice != null
+            disconnectButton.isEnabled = active
+            statusView.text = when (snapshot.socketState) {
+                "connecting" -> "Connection started"
+                "connected_read_only" -> "Connected read-only; received ${snapshot.bytesReceived} byte(s)"
+                "disconnected" -> "Disconnected: ${snapshot.disconnectReason ?: "unknown reason"}"
+                else -> snapshot.socketState
+            }
+        }
+    }
+
+    private fun copyReport() {
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText("GB-M0-R4 RFCOMM report", latestReport))
+        statusView.text = "Redacted report copied"
+    }
+
+    private fun shareReport() {
+        startActivity(
+            Intent.createChooser(
+                Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, latestReport)
+                },
+                "Export GB-M0-R4 report"
+            )
+        )
+    }
+}

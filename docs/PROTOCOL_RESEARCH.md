@@ -61,18 +61,28 @@ GalaxyBridge MUST implement only the minimum framing needed for read-only discov
 
 ## R4 hardware sequence
 1. Inventory all CoreBluetooth-visible services/characteristics from SM-R510 on iPhone.
-2. If no usable management GATT surface exists, classify direct path `NO_USABLE_GATT`.
+2. After complete physical evidence, classify the iOS result as `DIRECT_IOS_GATT_CANDIDATE`, `NO_USABLE_GATT_OBSERVED`, or `HARDWARE_REQUIRED`.
 3. On Watch6, query bonded/visible device UUIDs and resolve `2e73a4ad-332d-41fc-90e2-16bef06523f2` through SDP.
 4. Open RFCOMM read-only first.
-5. Capture/decode status without sending unknown writes.
+5. Capture bounded incoming bytes without sending any command.
 6. Keep Buds actively streaming audio from iPhone while Watch holds management connection.
-7. Only after stable status read, perform one known ANC toggle and verify both acoustic behavior and returned state.
+7. Only after a separate PM review establishes a high-confidence, non-destructive status packet may one status query be implemented.
+
+## R4 diagnostic implementation
+
+The iOS diagnostic independently implements CoreBluetooth discovery. It scans without a service filter because the physical GATT surface is unknown, requires explicit owner selection, discovers all services and characteristics, reads only characteristics advertising `read`, subscribes only to `notify`/`indicate`, records per-characteristic properties and peripheral write-size limits, bounds captured values, and exports a report without the CoreBluetooth peripheral identifier.
+
+The Watch6 diagnostic enumerates bonded devices after `BLUETOOTH_CONNECT` permission, requires explicit owner selection, and calls Android's public `createRfcommSocketToServiceRecord(UUID)` API with `2e73a4ad-332d-41fc-90e2-16bef06523f2`. SDP resolves the channel; no channel number is present in code. The probe obtains only the socket input stream, retains at most 4096 recent bytes, tracks total bytes, and has no automatic reconnect.
+
+No status query is implemented. The current research documents framing shape but not a sufficiently justified exact read-only message ID and packet construction. Therefore `commands_sent` remains exactly zero and no protocol parser is claimed.
 
 ## Safety
 - no firmware flash/downgrade
 - no factory reset
 - no unknown message IDs
 - no destructive writes
+- no status or ANC command in the R4 diagnostic implementation
+- no automatic reconnect loop
 - redact device addresses/identifiers in committed traces
 
 ## License boundary

@@ -64,18 +64,18 @@ Do not count answer/decline support unless actually exposed and verified on devi
 2. Discover Buds bonded/visible state and SDP UUIDs.
 3. Identify candidate SPP service record.
 4. Open RFCOMM socket.
-5. Decode status packets without sending destructive commands.
+5. Record connection lifecycle and bounded incoming bytes without sending any command.
 
 ### C. Simultaneous topology gate
 1. Keep Buds audio actively streaming from iPhone.
 2. Open/hold Watch management connection.
-3. Read stable status/battery.
-4. Toggle ANC once.
-5. Verify acoustic mode changed.
-6. Verify returned state changed.
-7. Confirm iPhone audio remains usable.
+3. Confirm whether audio continues without takeover/drop.
+4. Record whether Watch receives any bytes.
+5. Disconnect Watch management and confirm iPhone audio remains usable.
 
-PASS only if simultaneous topology works. If it fails, capture exact failure mode before trying alternate connection ownership.
+The current R4 diagnostic sends zero commands. Status/battery and ANC tests require a later PM-authorized increment after exact non-destructive packet construction is independently justified and read-only transport succeeds.
+
+R4 remains `PARTIAL — HARDWARE_REQUIRED` until simultaneous topology is physically tested. A later full PASS still requires stable status evidence and separately authorized control validation. If topology fails, capture the exact failure mode before trying alternate connection ownership.
 
 ## Safety
 - No firmware flashing/downgrading in M0.

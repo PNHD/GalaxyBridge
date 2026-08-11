@@ -59,7 +59,7 @@ Extended probes:
 Distribution note: Samsung Health Sensor SDK public distribution requires Samsung partner registration; developer mode is testing/debugging only.
 
 ### GB-M0-R4 — Buds2 Pro Transport Critical Spike
-Status: PHASE_A_RESEARCH_VERIFIED / HARDWARE_PROBES_PENDING
+Status: PARTIAL — HARDWARE_REQUIRED / DIAGNOSTIC IMPLEMENTATION READY_FOR_OWNER_BUILD
 Owner: Research first, then Codex PoC
 Reviewer: Claude Desktop / Sonnet High / read-only
 Gate: real Buds2 Pro + Watch6 + iPhone simultaneously
@@ -77,11 +77,19 @@ Decision tree:
 2. If management protocol is available over GATT, test direct iPhone path.
 3. Otherwise test Watch6 RFCOMM/SPP client path using `2e73a4ad-332d-41fc-90e2-16bef06523f2`, verified via SDP/device evidence.
 4. With Buds audio connected to iPhone, establish management connection from Watch6.
-5. Read battery/status.
-6. Read ANC state.
-7. Toggle ANC and verify acoustically + via returned state.
+5. Record read-only incoming bytes with a strict memory bound and no command writes.
+6. Only after PM review of independently understood packet evidence, add one non-destructive status query.
+7. ANC reads/writes remain outside R4 implementation authority.
 
 The milestone cannot pass without step 4 proving simultaneous iPhone audio + Watch management is viable.
+
+Implemented diagnostic surface:
+- iOS CoreBluetooth scan, explicit selection, complete service/characteristic inventory, safe reads/subscriptions, and redacted report export
+- Watch6 bonded-device inventory, explicit selection, public SDP-resolved RFCOMM connection, read-only input, bounded raw-byte log, lifecycle/error report, and manual disconnect
+- exact physical topology instructions in `docs/GB-M0-R4_OWNER_RUNBOOK.md`
+- no status query because no exact read-only message ID/packet is independently justified by the current repository evidence
+
+Current architecture classification: `PENDING — HARDWARE_REQUIRED`; none of `DIRECT_IOS_GATT`, `WATCH_RFCOMM_BRIDGE`, or `BLOCKED` has been selected.
 
 ## Stop conditions
 - Do not start polished UI before M0 transport gates pass.

@@ -13,6 +13,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.RadioButton
@@ -111,14 +112,17 @@ class MainActivity : Activity() {
     }
 
     private fun ensureBluetoothPermissionAndLoad() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-            && checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED
-        ) {
-            requestPermissions(
-                arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
-                BLUETOOTH_PERMISSION_REQUEST
-            )
-            return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val connectGranted = checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+            val scanGranted = checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
+
+            if (!connectGranted || !scanGranted) {
+                requestPermissions(
+                    arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN),
+                    BLUETOOTH_PERMISSION_REQUEST
+                )
+                return
+            }
         }
         loadBondedDevices()
     }
@@ -129,12 +133,13 @@ class MainActivity : Activity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == BLUETOOTH_PERMISSION_REQUEST
-            && grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
-        ) {
-            loadBondedDevices()
-        } else if (requestCode == BLUETOOTH_PERMISSION_REQUEST) {
-            statusView.text = "Bluetooth connection permission denied"
+        if (requestCode == BLUETOOTH_PERMISSION_REQUEST) {
+            val allGranted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+            if (allGranted) {
+                loadBondedDevices()
+            } else {
+                statusView.text = "Bluetooth permissions denied (Connect/Scan required)"
+            }
         }
     }
 
@@ -212,6 +217,13 @@ class MainActivity : Activity() {
             latestReport = DiagnosticReport.render(snapshot, ReadOnlyRfcommProbe.SERVICE_UUID)
             reportView.text = latestReport
             val active = snapshot.socketState == "connecting" || snapshot.socketState == "connected_read_only"
+            
+            if (active) {
+                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            } else {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
+
             connectButton.isEnabled = !active && selectedDevice != null
             disconnectButton.isEnabled = active
             statusView.text = when (snapshot.socketState) {

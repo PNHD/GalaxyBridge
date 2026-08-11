@@ -13,6 +13,7 @@ Status: READY
 Owner: Codex implementation
 Reviewer: Claude Desktop / Sonnet High / read-only
 Gate: real iPhone 17e + Galaxy Watch6
+Tracking: issue #1
 
 Must prove:
 - discovery/pairing path
@@ -58,15 +59,23 @@ Extended probes:
 Distribution note: Samsung Health Sensor SDK public distribution requires Samsung partner registration; developer mode is testing/debugging only.
 
 ### GB-M0-R4 — Buds2 Pro Transport Critical Spike
-Status: HIGHEST RISK / READY
+Status: PHASE_A_RESEARCH_VERIFIED / HARDWARE_PROBES_PENDING
 Owner: Research first, then Codex PoC
 Reviewer: Claude Desktop / Sonnet High / read-only
 Gate: real Buds2 Pro + Watch6 + iPhone simultaneously
+Tracking: issue #2
+
+Verified research baseline:
+- upstream snapshot: `timschneeb/GalaxyBudsClient@dce4735d76cd16abb818cdd96bf458efd4abef47`
+- `Buds2ProDeviceSpec` selects `Uuids.SppNew`
+- exact first candidate service UUID: `2e73a4ad-332d-41fc-90e2-16bef06523f2`
+- modern SPP framing evidence includes SOM/header/message-id/payload/CRC16-CCITT/EOM
+- direct iPhone path remains unproven until actual GATT inventory
 
 Decision tree:
 1. Inventory all GATT services/characteristics exposed by SM-R510 to iOS.
 2. If management protocol is available over GATT, test direct iPhone path.
-3. Otherwise test Watch6 RFCOMM/SPP client path using first known SM-R510 candidate service UUID `2e73a4ad-332d-41fc-90e2-16bef06523f2`, then verify via SDP/device evidence.
+3. Otherwise test Watch6 RFCOMM/SPP client path using `2e73a4ad-332d-41fc-90e2-16bef06523f2`, verified via SDP/device evidence.
 4. With Buds audio connected to iPhone, establish management connection from Watch6.
 5. Read battery/status.
 6. Read ANC state.
@@ -84,4 +93,6 @@ The milestone cannot pass without step 4 proving simultaneous iPhone audio + Wat
 - Owner physical-device evidence overrides simulator/emulator/agent claims.
 
 ## Next PM action
-Run GB-M0-R4 protocol inventory in parallel with GB-M0-R1 architecture scaffold, then prepare real-device test build.
+1. Implement GB-M0-R1 minimal iOS/Wear scaffold.
+2. In parallel, prepare GB-M0-R4 iPhone GATT inventory + Watch RFCOMM diagnostic probes.
+3. Do not start R2/R3 product integration until the shared scaffold exists.

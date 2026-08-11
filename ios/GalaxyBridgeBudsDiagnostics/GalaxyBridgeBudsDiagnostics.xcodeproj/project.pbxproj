@@ -1,0 +1,143 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B10000000000000000000001 /* GalaxyBridgeBudsDiagnosticsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* GalaxyBridgeBudsDiagnosticsApp.swift */; };
+		B10000000000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* ContentView.swift */; };
+		B10000000000000000000003 /* BudsGattInventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003 /* BudsGattInventory.swift */; };
+		B10000000000000000000004 /* GattDiagnosticReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004 /* GattDiagnosticReport.swift */; };
+		B10000000000000000000005 /* GattDiagnosticReportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000006 /* GattDiagnosticReportTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		I10000000000000000000001 = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E10000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D10000000000000000000001;
+			remoteInfo = GalaxyBridgeBudsDiagnostics;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		A10000000000000000000001 /* GalaxyBridgeBudsDiagnosticsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalaxyBridgeBudsDiagnosticsApp.swift; sourceTree = "<group>"; };
+		A10000000000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A10000000000000000000003 /* BudsGattInventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudsGattInventory.swift; sourceTree = "<group>"; };
+		A10000000000000000000004 /* GattDiagnosticReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GattDiagnosticReport.swift; sourceTree = "<group>"; };
+		A10000000000000000000005 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A10000000000000000000006 /* GattDiagnosticReportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GattDiagnosticReportTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000007 /* GalaxyBridgeBudsDiagnostics.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GalaxyBridgeBudsDiagnostics.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000008 /* GalaxyBridgeBudsDiagnosticsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GalaxyBridgeBudsDiagnosticsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C10000000000000000000002 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		C10000000000000000000005 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		F10000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				F10000000000000000000002 /* App */,
+				F10000000000000000000003 /* Bluetooth */,
+				F10000000000000000000004 /* Shared */,
+				F10000000000000000000005 /* Resources */,
+				F10000000000000000000006 /* Tests */,
+				F10000000000000000000007 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F10000000000000000000002 /* App */ = {isa = PBXGroup; children = (A10000000000000000000001, A10000000000000000000002,); path = App; sourceTree = "<group>"; };
+		F10000000000000000000003 /* Bluetooth */ = {isa = PBXGroup; children = (A10000000000000000000003,); path = Bluetooth; sourceTree = "<group>"; };
+		F10000000000000000000004 /* Shared */ = {isa = PBXGroup; children = (A10000000000000000000004,); path = Shared; sourceTree = "<group>"; };
+		F10000000000000000000005 /* Resources */ = {isa = PBXGroup; children = (A10000000000000000000005,); path = Resources; sourceTree = "<group>"; };
+		F10000000000000000000006 /* Tests */ = {isa = PBXGroup; children = (A10000000000000000000006,); path = Tests; sourceTree = "<group>"; };
+		F10000000000000000000007 /* Products */ = {isa = PBXGroup; children = (A10000000000000000000007, A10000000000000000000008,); name = Products; sourceTree = "<group>"; };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D10000000000000000000001 /* GalaxyBridgeBudsDiagnostics */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = G10000000000000000000002;
+			buildPhases = (C10000000000000000000001, C10000000000000000000002, C10000000000000000000003,);
+			buildRules = ();
+			dependencies = ();
+			name = GalaxyBridgeBudsDiagnostics;
+			productName = GalaxyBridgeBudsDiagnostics;
+			productReference = A10000000000000000000007;
+			productType = "com.apple.product-type.application";
+		};
+		D10000000000000000000002 /* GalaxyBridgeBudsDiagnosticsTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = G10000000000000000000003;
+			buildPhases = (C10000000000000000000004, C10000000000000000000005, C10000000000000000000006,);
+			buildRules = ();
+			dependencies = (H10000000000000000000001,);
+			name = GalaxyBridgeBudsDiagnosticsTests;
+			productName = GalaxyBridgeBudsDiagnosticsTests;
+			productReference = A10000000000000000000008;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E10000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					D10000000000000000000001 = {CreatedOnToolsVersion = 16.0; };
+					D10000000000000000000002 = {CreatedOnToolsVersion = 16.0; TestTargetID = D10000000000000000000001; };
+				};
+			};
+			buildConfigurationList = G10000000000000000000001;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (en, Base,);
+			mainGroup = F10000000000000000000001;
+			productRefGroup = F10000000000000000000007;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (D10000000000000000000001, D10000000000000000000002,);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C10000000000000000000003 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		C10000000000000000000006 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C10000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B10000000000000000000001, B10000000000000000000002, B10000000000000000000003, B10000000000000000000004,); runOnlyForDeploymentPostprocessing = 0; };
+		C10000000000000000000004 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B10000000000000000000005,); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		H10000000000000000000001 = {isa = PBXTargetDependency; target = D10000000000000000000001; targetProxy = I10000000000000000000001; };
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		J10000000000000000000001 = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; SWIFT_VERSION = 5.0;}; name = Debug; };
+		J10000000000000000000002 = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; SWIFT_VERSION = 5.0;}; name = Release; };
+		J10000000000000000000003 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = Resources/Info.plist; INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = com.pnhd.GalaxyBridgeBudsDiagnostics; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = 1;}; name = Debug; };
+		J10000000000000000000004 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = Resources/Info.plist; INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = com.pnhd.GalaxyBridgeBudsDiagnostics; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = 1; VALIDATE_PRODUCT = YES;}; name = Release; };
+		J10000000000000000000005 = {isa = XCBuildConfiguration; buildSettings = {BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGN_STYLE = Automatic; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.pnhd.GalaxyBridgeBudsDiagnosticsTests; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = 1; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GalaxyBridgeBudsDiagnostics.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GalaxyBridgeBudsDiagnostics";}; name = Debug; };
+		J10000000000000000000006 = {isa = XCBuildConfiguration; buildSettings = {BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGN_STYLE = Automatic; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.pnhd.GalaxyBridgeBudsDiagnosticsTests; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = 1; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GalaxyBridgeBudsDiagnostics.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GalaxyBridgeBudsDiagnostics";}; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		G10000000000000000000001 = {isa = XCConfigurationList; buildConfigurations = (J10000000000000000000001, J10000000000000000000002,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		G10000000000000000000002 = {isa = XCConfigurationList; buildConfigurations = (J10000000000000000000003, J10000000000000000000004,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		G10000000000000000000003 = {isa = XCConfigurationList; buildConfigurations = (J10000000000000000000005, J10000000000000000000006,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = E10000000000000000000001 /* Project object */;
+}

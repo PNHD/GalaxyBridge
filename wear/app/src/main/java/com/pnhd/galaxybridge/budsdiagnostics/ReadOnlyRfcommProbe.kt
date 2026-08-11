@@ -14,11 +14,13 @@ class ReadOnlyRfcommProbe(
     companion object {
         val SERVICE_UUID: UUID = ProtocolConstants.RFCOMM_SERVICE_UUID
         private const val MAX_CAPTURE_BYTES = 4096
+        private const val CONNECT_TIMEOUT_MS = 15000L
     }
 
     private val lock = Any()
     private var socket: BluetoothSocket? = null
     private var worker: Thread? = null
+    private var targetDevice: BluetoothDevice? = null
     private var stopRequested = false
     private var startedAtUtc: String? = null
     private var established = false
@@ -31,10 +33,11 @@ class ReadOnlyRfcommProbe(
 
     @SuppressLint("MissingPermission")
     fun connect(device: BluetoothDevice): Boolean = synchronized(lock) {
-        if (worker?.isAlive == true || socketState == "connecting" || socketState == "connected") {
+        if (worker?.isAlive == true || socketState == "connecting" || socketState == "connected_read_only") {
             return false
         }
 
+        targetDevice = device
         stopRequested = false
         startedAtUtc = Instant.now().toString()
         established = false
@@ -53,7 +56,9 @@ class ReadOnlyRfcommProbe(
     fun disconnect() {
         val socketToClose = synchronized(lock) {
             stopRequested = true
-            disconnectReason = "owner_requested"
+            if (disconnectReason == null) {
+                disconnectReason = "owner_requested"
+            }
             socket
         }
         runCatching { socketToClose?.close() }
@@ -62,16 +67,28 @@ class ReadOnlyRfcommProbe(
     @SuppressLint("MissingPermission")
     private fun runConnection(device: BluetoothDevice) {
         val startedNanos = System.nanoTime()
+        
+        val watchdog = Thread({
+            Thread.sleep(CONNECT_TIMEOUT_MS)
+            synchronized(lock) {
+                if (!established && socketState == "connecting") {
+                    disconnectReason = "connect_timeout"
+                    socketState = "connect_timeout"
+                    socket?.close()
+                }
+            }
+        }, "rfcomm-connect-watchdog")
+        watchdog.start()
+
         try {
             adapter.cancelDiscovery()
             val localSocket = device.createRfcommSocketToServiceRecord(SERVICE_UUID)
-            val cancelledBeforeConnect = synchronized(lock) {
+            synchronized(lock) {
                 socket = localSocket
-                stopRequested
             }
-            if (cancelledBeforeConnect) {
-                return
-            }
+            
+            if (isStopRequested()) return
+            
             localSocket.connect()
 
             synchronized(lock) {
@@ -97,7 +114,7 @@ class ReadOnlyRfcommProbe(
             }
         } catch (error: Exception) {
             synchronized(lock) {
-                if (!stopRequested) {
+                if (!stopRequested && disconnectReason != "connect_timeout") {
                     exceptionType = error.javaClass.name
                     exceptionMessage = error.message
                     disconnectReason = if (established) "read_failed" else "connect_failed"
@@ -108,7 +125,9 @@ class ReadOnlyRfcommProbe(
             runCatching { socketToClose?.close() }
             synchronized(lock) {
                 socket = null
-                socketState = "disconnected"
+                if (socketState != "connect_timeout") {
+                    socketState = "disconnected"
+                }
                 if (disconnectReason == null) {
                     disconnectReason = if (stopRequested) "owner_requested" else "connection_ended"
                 }
@@ -119,10 +138,15 @@ class ReadOnlyRfcommProbe(
 
     private fun isStopRequested(): Boolean = synchronized(lock) { stopRequested }
 
+    @SuppressLint("MissingPermission")
     private fun emitLocked() {
+        val device = targetDevice
         listener(
             RfcommProbeSnapshot(
                 startedAtUtc = startedAtUtc,
+                targetName = device?.name,
+                targetAddressSuffix = device?.address?.split(":")?.takeLast(2)?.joinToString(":"),
+                targetClassification = if (device?.name?.let { isLikelyTarget(it) } == true) "LIKELY_SM_R510" else "UNVERIFIED",
                 connectionEstablished = established,
                 connectionTimeMs = connectionTimeMs,
                 socketState = socketState,
@@ -133,5 +157,12 @@ class ReadOnlyRfcommProbe(
                 disconnectReason = disconnectReason
             )
         )
+    }
+
+    private fun isLikelyTarget(name: String?): Boolean {
+        val normalized = name?.lowercase() ?: return false
+        return normalized.contains("buds2 pro")
+                || normalized.contains("buds2pro")
+                || normalized.contains("sm-r510")
     }
 }

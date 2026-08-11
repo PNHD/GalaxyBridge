@@ -8,6 +8,9 @@ object ProtocolConstants {
 
 data class RfcommProbeSnapshot(
     val startedAtUtc: String?,
+    val targetName: String? = null,
+    val targetAddressSuffix: String? = null,
+    val targetClassification: String? = null,
     val connectionEstablished: Boolean,
     val connectionTimeMs: Long?,
     val socketState: String,
@@ -27,7 +30,9 @@ object DiagnosticRedactor {
 object DiagnosticReport {
     fun render(snapshot: RfcommProbeSnapshot, serviceUuid: UUID): String = buildString {
         appendLine("GalaxyBridge GB-M0-R4 Watch6 RFCOMM probe")
-        appendLine("target: owner-selected bonded device (name/address redacted)")
+        appendLine("target_name: ${snapshot.targetName ?: "unknown"}")
+        appendLine("target_classification: ${snapshot.targetClassification ?: "unknown"}")
+        appendLine("target_address_suffix: ${snapshot.targetAddressSuffix ?: "unknown"}")
         appendLine("rfcomm_service_uuid: $serviceUuid")
         appendLine("rfcomm_channel: SDP-resolved; never hard-coded")
         appendLine("commands_sent: 0")

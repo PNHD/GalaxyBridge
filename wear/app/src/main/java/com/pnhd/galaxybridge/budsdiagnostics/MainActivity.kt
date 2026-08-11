@@ -32,13 +32,14 @@ class MainActivity : Activity() {
     private val probe by lazy { ReadOnlyRfcommProbe(bluetoothAdapter, ::onProbeSnapshot) }
 
     private lateinit var statusView: TextView
+    private lateinit var targetView: TextView
     private lateinit var deviceGroup: RadioGroup
     private lateinit var connectButton: Button
     private lateinit var disconnectButton: Button
     private lateinit var reportView: TextView
     private var selectedDevice: BluetoothDevice? = null
     private var latestReport = DiagnosticReport.render(
-        RfcommProbeSnapshot(null, false, null, "idle", null, null, 0, "", null),
+        RfcommProbeSnapshot(null, null, null, null, false, null, "idle", null, null, 0, "", null),
         ReadOnlyRfcommProbe.SERVICE_UUID
     )
 
@@ -60,15 +61,11 @@ class MainActivity : Activity() {
         }
 
         content.addView(text("GB-M0-R4 Buds RFCOMM Probe", 18f))
-        content.addView(text("READ-ONLY: sends zero bytes, has no reconnect loop, and uses SDP service resolution."))
-
-        statusView = text("Checking Bluetooth permission")
-        content.addView(statusView)
-
-        content.addView(button("Refresh bonded devices") { ensureBluetoothPermissionAndLoad() })
-
-        deviceGroup = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
-        content.addView(deviceGroup)
+        
+        targetView = text("TARGET: None selected", 14f).apply { 
+            setTextColor(0xFF00FF00.toInt()) // Green to stand out
+        }
+        content.addView(targetView)
 
         val connectionButtons = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -82,6 +79,14 @@ class MainActivity : Activity() {
             }
         }
         content.addView(connectionButtons)
+
+        statusView = text("Checking Bluetooth permission")
+        content.addView(statusView)
+
+        content.addView(button("Refresh bonded devices") { ensureBluetoothPermissionAndLoad() })
+
+        deviceGroup = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
+        content.addView(deviceGroup)
 
         val exportButtons = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -154,57 +159,59 @@ class MainActivity : Activity() {
             return
         }
 
-        val devices = bluetoothAdapter.bondedDevices.sortedWith(
-            compareByDescending<BluetoothDevice> { isLikelyTarget(it.name) }
-                .thenBy { it.name ?: "" }
-        )
-        statusView.text = "${devices.size} bonded device(s). Explicitly select SM-R510."
+        val allBonded = bluetoothAdapter.bondedDevices
+        val targetDevices = allBonded.filter { isLikelyTarget(it.name) }
+            .sortedBy { it.name ?: "" }
+        
+        val otherDevices = allBonded.filter { !isLikelyTarget(it.name) }
+            .sortedBy { it.name ?: "" }
 
-        devices.forEach { device ->
+        statusView.text = "${allBonded.size} bonded device(s). ${targetDevices.size} potential SM-R510."
+
+        targetDevices.forEach { device ->
             val radio = RadioButton(this).apply {
                 text = deviceLabel(device)
                 setOnCheckedChangeListener { _, checked ->
                     if (checked) {
-                        selectedDevice = device
-                        connectButton.isEnabled = true
-                        statusView.text = "Selected ${device.name ?: "unnamed device"}; verify metadata before connecting"
+                        selectTarget(device)
                     }
                 }
             }
             deviceGroup.addView(radio)
         }
+
+        if (targetDevices.size == 1) {
+            (deviceGroup.getChildAt(0) as RadioButton).isChecked = true
+        }
+
+        // Add others as read-only labels to avoid accidental selection
+        if (otherDevices.isNotEmpty()) {
+            val contentLayout = deviceGroup.parent as LinearLayout
+            contentLayout.addView(text("--- OTHER BONDED (NOT TARGETS) ---", 10f))
+            otherDevices.forEach { device ->
+                contentLayout.addView(text(deviceLabel(device), 8f))
+            }
+        }
     }
 
     @SuppressLint("MissingPermission")
-    private fun deviceLabel(device: BluetoothDevice): String {
-        val name = device.name ?: "Unnamed bonded device"
-        val modelHint = if (isLikelyTarget(name)) "LIKELY SM-R510" else "UNVERIFIED"
-        val type = when (device.type) {
-            BluetoothDevice.DEVICE_TYPE_CLASSIC -> "Classic"
-            BluetoothDevice.DEVICE_TYPE_DUAL -> "Dual"
-            BluetoothDevice.DEVICE_TYPE_LE -> "LE"
-            else -> "Unknown type"
-        }
-        val cachedUuids = device.uuids?.joinToString { it.uuid.toString() } ?: "none cached"
-        return "$modelHint\n$name\n$type; bond=${device.bondState}; address=${maskedAddress(device.address)}\nUUIDs: $cachedUuids"
-    }
-
-    private fun isLikelyTarget(name: String?): Boolean {
-        val normalized = name?.lowercase() ?: return false
-        return normalized.contains("buds2 pro")
-            || normalized.contains("buds2pro")
-            || normalized.contains("sm-r510")
-    }
-
-    private fun maskedAddress(address: String): String {
-        val suffix = address.split(":").takeLast(2).joinToString(":")
-        return "**:**:**:**:$suffix"
+    private fun selectTarget(device: BluetoothDevice) {
+        selectedDevice = device
+        connectButton.isEnabled = true
+        targetView.text = "TARGET: ${device.name}\n${maskedAddress(device.address)}"
+        statusView.text = "Ready to connect to SM-R510 target"
     }
 
     private fun connectSelectedDevice() {
         val device = selectedDevice ?: return
+        
+        if (!isLikelyTarget(device.name)) {
+            statusView.text = "TARGET_REJECTED: ${device.name} is not SM-R510"
+            return
+        }
+
         if (probe.connect(device)) {
-            statusView.text = "RFCOMM connection started; no command bytes will be sent"
+            statusView.text = "RFCOMM connection started (15s timeout)"
             connectButton.isEnabled = false
             disconnectButton.isEnabled = true
         } else {
@@ -226,10 +233,14 @@ class MainActivity : Activity() {
 
             connectButton.isEnabled = !active && selectedDevice != null
             disconnectButton.isEnabled = active
+            
+            targetView.text = "TARGET: ${snapshot.targetName ?: selectedDevice?.name ?: "None"}\n${snapshot.targetAddressSuffix ?: "??:??"}"
+
             statusView.text = when (snapshot.socketState) {
-                "connecting" -> "Connection started"
-                "connected_read_only" -> "Connected read-only; received ${snapshot.bytesReceived} byte(s)"
-                "disconnected" -> "Disconnected: ${snapshot.disconnectReason ?: "unknown reason"}"
+                "connecting" -> "Connection started..."
+                "connected_read_only" -> "CONNECTED; received ${snapshot.bytesReceived} byte(s)"
+                "connect_timeout" -> "TIMEOUT: Failed to connect in 15s"
+                "disconnected" -> "Disconnected: ${snapshot.disconnectReason ?: "unknown"}"
                 else -> snapshot.socketState
             }
         }
@@ -251,5 +262,31 @@ class MainActivity : Activity() {
                 "Export GB-M0-R4 report"
             )
         )
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun deviceLabel(device: BluetoothDevice): String {
+        val name = device.name ?: "Unnamed bonded device"
+        val modelHint = if (isLikelyTarget(name)) "LIKELY SM-R510" else "UNVERIFIED"
+        val type = when (device.type) {
+            BluetoothDevice.DEVICE_TYPE_CLASSIC -> "Classic"
+            BluetoothDevice.DEVICE_TYPE_DUAL -> "Dual"
+            BluetoothDevice.DEVICE_TYPE_LE -> "LE"
+            else -> "Unknown type"
+        }
+        val cachedUuids = device.uuids?.joinToString { it.uuid.toString() } ?: "none cached"
+        return "$modelHint\n$name\n$type; bond=${device.bondState}; address=${maskedAddress(device.address)}\nUUIDs: $cachedUuids"
+    }
+
+    private fun isLikelyTarget(name: String?): Boolean {
+        val normalized = name?.lowercase() ?: return false
+        return normalized.contains("buds2 pro")
+                || normalized.contains("buds2pro")
+                || normalized.contains("sm-r510")
+    }
+
+    private fun maskedAddress(address: String): String {
+        val suffix = address.split(":").takeLast(2).joinToString(":")
+        return "**:**:**:**:$suffix"
     }
 }

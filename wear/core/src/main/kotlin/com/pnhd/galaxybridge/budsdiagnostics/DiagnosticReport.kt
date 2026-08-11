@@ -18,7 +18,14 @@ data class RfcommProbeSnapshot(
     val exceptionMessage: String?,
     val bytesReceived: Long,
     val boundedRawBytesHex: String,
-    val disconnectReason: String?
+    val disconnectReason: String?,
+    val totalFrames: Int = 0,
+    val validCrcFrames: Int = 0,
+    val invalidCrcFrames: Int = 0,
+    val framesById: Map<Int, Int> = emptyMap(),
+    val latestStatus0x61: String? = null,
+    val captureFilePath: String? = null,
+    val captureSha256: String? = null
 )
 
 object DiagnosticRedactor {
@@ -44,7 +51,22 @@ object DiagnosticReport {
         appendLine("exception_type: ${snapshot.exceptionType ?: "none"}")
         appendLine("exception_message: ${DiagnosticRedactor.redact(snapshot.exceptionMessage) ?: "none"}")
         appendLine("bytes_received_total: ${snapshot.bytesReceived}")
-        appendLine("bounded_raw_bytes_hex: ${snapshot.boundedRawBytesHex.ifEmpty { "none" }}")
         appendLine("disconnect_reason: ${snapshot.disconnectReason ?: "none"}")
+        appendLine("")
+        appendLine("--- DECODER SUMMARY ---")
+        appendLine("total_frames: ${snapshot.totalFrames}")
+        appendLine("valid_crc_frames: ${snapshot.validCrcFrames}")
+        appendLine("invalid_crc_frames: ${snapshot.invalidCrcFrames}")
+        appendLine("frames_by_id:")
+        snapshot.framesById.forEach { (id, count) ->
+            appendLine("  ${"0x%02X".format(id)} (${BudsSppMsgIds.getName(id)}): $count")
+        }
+        appendLine("")
+        appendLine("--- LATEST 0x61 DECODE ---")
+        appendLine(snapshot.latestStatus0x61 ?: "none received")
+        appendLine("")
+        appendLine("--- PRIVATE CAPTURE ---")
+        appendLine("local_path: ${snapshot.captureFilePath ?: "none"}")
+        appendLine("sha256: ${snapshot.captureSha256 ?: "none"}")
     }
 }

@@ -29,7 +29,7 @@ class MainActivity : Activity() {
     private val bluetoothAdapter by lazy {
         (getSystemService(BLUETOOTH_SERVICE) as BluetoothManager).adapter
     }
-    private val probe by lazy { ReadOnlyRfcommProbe(bluetoothAdapter, ::onProbeSnapshot) }
+    private val probe by lazy { ReadOnlyRfcommProbe(bluetoothAdapter, filesDir, ::onProbeSnapshot) }
 
     private lateinit var statusView: TextView
     private lateinit var targetView: TextView
@@ -186,10 +186,11 @@ class MainActivity : Activity() {
 
         // Add others as read-only labels to avoid accidental selection
         if (otherDevices.isNotEmpty()) {
-            val contentLayout = deviceGroup.parent as LinearLayout
-            contentLayout.addView(text("--- OTHER BONDED (NOT TARGETS) ---", 10f))
+            val scroll = deviceGroup.parent.parent as ScrollView
+            val layout = scroll.getChildAt(0) as LinearLayout
+            layout.addView(text("--- OTHER BONDED (NOT TARGETS) ---", 10f))
             otherDevices.forEach { device ->
-                contentLayout.addView(text(deviceLabel(device), 8f))
+                layout.addView(text(deviceLabel(device), 8f))
             }
         }
     }
